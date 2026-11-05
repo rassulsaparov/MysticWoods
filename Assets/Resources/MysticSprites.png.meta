@@ -1,0 +1,386 @@
+fileFormatVersion: 2
+guid: 8483928a9f7d732418e64dd55ab0279e
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1315500181431974624
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_0
+  - first:
+      213: 892492050174009381
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_1
+  - first:
+      213: -8714477022281491659
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_2
+  - first:
+      213: 3664551913887331952
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_3
+  - first:
+      213: -6684722311592355055
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_4
+  - first:
+      213: -1482286968219418851
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_5
+  - first:
+      213: 3566729960452634436
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_6
+  - first:
+      213: 4821745583123463089
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_7
+  - first:
+      213: -719274584703282880
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_8
+  - first:
+      213: -7260157289686974800
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_9
+  - first:
+      213: -4519539458358175630
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_10
+  - first:
+      213: 5521216452026162576
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_11
+  - first:
+      213: 2913906541297654830
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_12
+  - first:
+      213: 6169767797665795412
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_13
+  - first:
+      213: -1642253737141074348
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_14
+  - first:
+      213: 4304789205314270017
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_15
+  - first:
+      213: 9158785202093259040
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_16
+  - first:
+      213: 4649394864663109484
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_17
+  - first:
+      213: 288496372916691912
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_18
+  - first:
+      213: -4857118722520916
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_19
+  - first:
+      213: 8281727924491752203
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_20
+  - first:
+      213: 575155891201327720
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_21
+  - first:
+      213: -8999630582322662849
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_22
+  - first:
+      213: -4558901774094103466
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_23
+  - first:
+      213: 6428624566258007600
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_24
+  - first:
+      213: 4410444594859971512
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_25
+  - first:
+      213: -6455733822441260336
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_26
+  - first:
+      213: -5044516211662677681
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_27
+  - first:
+      213: 5010261159977791804
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_28
+  - first:
+      213: -489514830271672792
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_29
+  - first:
+      213: -2880578357462968319
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_30
+  - first:
+      213: -481997336632373647
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_31
+  - first:
+      213: -527245203109276013
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_32
+  - first:
+      213: -3401475298238639937
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_33
+  - first:
+      213: 4637564158069491057
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_34
+  - first:
+      213: 1865459551031701727
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_35
+  - first:
+      213: -1838288453312412806
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_36
+  - first:
+      213: 3109734165897398253
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_37
+  - first:
+      213: 2521130683209088764
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_38
+  - first:
+      213: 1550230955972864192
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_39
+  - first:
+      213: 2904236663505349446
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_40
+  - first:
+      213: 3041459909378820472
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_41
+  - first:
+      213: -4502247925315530613
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_42
+  - first:
+      213: -370426779883896374
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_43
+  - first:
+      213: 3330888342255274503
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_44
+  - first:
+      213: -6678602922627571948
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_45
+  - first:
+      213: 3769996533585964040
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_46
+  - first:
+      213: 3559996213286324473
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_47
+  - first:
+      213: 971304446918474296
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_48
+  - first:
+      213: 2351147857242162383
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_49
+  - first:
+      213: 2794590933130686596
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_50
+  - first:
+      213: -1387216108377040756
+    second: 2b24f366-fdc1-44d8-bbdb-6fb96a32d330_51
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Enemy
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 390
+        width: 522
+        height: 422
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0eaf638f178914210800000000000000
+      internalID: 1315500181431974624
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Coin
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 26
+        width: 302
+        height: 336
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9904abad14a60ae47bca21e627ce7dea
+      internalID: 1670813781
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Boss
+      rect:
+        serializedVersion: 2
+        x: 609
+        y: 357
+        width: 927
+        height: 667
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6b4c43800b0e2c349b7bd2f6b359e9db
+      internalID: 435571704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Bullet
+      rect:
+        serializedVersion: 2
+        x: 629
+        y: 0
+        width: 907
+        height: 316
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c92a3f25159d2534693c013931bc65db
+      internalID: -414559536
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 10ecbee2cd2a48b45bb5912e0a70852f
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":2.0,"y":2.0},"gridSpriteSize":{"x":768.0,"y":512.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      2b24f366-fdc1-44d8-bbdb-6fb96a32d330_1: 892492050174009381
+      2b24f366-fdc1-44d8-bbdb-6fb96a32d330_2: -8714477022281491659
+      2b24f366-fdc1-44d8-bbdb-6fb96a32d330_3: 3664551913887331952
+      2b24f366-fdc1-44d8-bbdb-6fb96a32d330_4: -6684722311592355055
+      Boss: 435571704
+      Bullet: -414559536
+      Coin: 1670813781
+      Enemy: 1315500181431974624
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
