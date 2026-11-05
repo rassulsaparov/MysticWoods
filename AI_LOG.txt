@@ -1,0 +1,16 @@
+
+AI Usage Log - Mystic Woods
+
+Tool: ChatGPT
+
+Purpose:
+- Understanding Assignment 8-9 requirements
+- Learning how to configure Unity Canvas
+- Learning how to create a Pause Menu
+- Testing mobile screen sizes
+- Preparing the Game Design Document
+- Learning GitHub and version control
+
+AI was used for learning and guidance.
+The project was edited and tested manually in Unity.
+
