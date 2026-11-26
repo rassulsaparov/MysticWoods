@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -13,11 +12,18 @@ public class MysticGame : MonoBehaviour
     public static bool MobileJump;
     public static bool MobileFire;
 
-    int level = 1;
-    int hp = 3;
-    int coins = 0;
-    int required = 4;
-    int bossHP = 8;
+    GameData data;
+    LevelData levelData;
+    int score;
+    float timeLeft;
+
+    public bool RoundEnded => ended;
+
+    int level;
+    int hp;
+    int coins;
+    int required;
+    int bossHP;
 
     GameObject player;
     GameObject boss;
@@ -31,31 +37,17 @@ public class MysticGame : MonoBehaviour
     float lastShot;
     float bossShot;
     float invulnerableUntil;
+    bool bossWarned;
+    const float BossWindUp = 0.5f;
 
     bool ended;
 
     static Sprite squareSprite;
 
-    // ============================
-    // AUTOMATIC GAME START
-    // ============================
-
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    static void AutoStart()
-    {
-        if (SceneManager.GetActiveScene().name != "SampleScene")
-            return;
-
-        if (FindFirstObjectByType<MysticGame>() == null)
-        {
-            new GameObject("MysticGame_AutoSetup")
-                .AddComponent<MysticGame>();
-        }
-    }
-
     void Start()
     {
         Instance = this;
+        data = GameData.Instance;
 
         player = GameObject.Find("Player");
 
@@ -66,7 +58,7 @@ public class MysticGame : MonoBehaviour
             return;
         }
 
-        if (FindFirstObjectByType<EventSystem>() == null)
+        if (FindAnyObjectByType<EventSystem>() == null)
         {
             new GameObject(
                 "EventSystem",
@@ -76,7 +68,11 @@ public class MysticGame : MonoBehaviour
         }
 
         BuildUI();
-        LoadLevel(1);
+        int selected = SaveSystem.SelectedLevel;
+        if (!SaveSystem.Data.unlockedLevels.Contains(selected))
+            selected = SaveSystem.Data.currentLevel;
+
+        LoadLevel(selected);
     }
 
     // ============================
@@ -244,21 +240,37 @@ public class MysticGame : MonoBehaviour
     // PLATFORMS
     // ============================
 
-    void Platform(float x, float y, float width)
+    void Platform(PlatformData platformData)
     {
+        float x = platformData.position.x;
+        float y = platformData.position.y;
+        float width = platformData.size.x;
         GameObject platform = Shape(
             "Ground_Platform",
             new Vector2(x, y),
-            new Vector2(width, 0.45f),
+            platformData.size,
             new Color(0.30f, 0.22f, 0.13f),
             true
         );
 
         platform.tag = "Ground";
 
+        if (platformData.moving)
+        {
+            platform.name = "Moving_Platform";
+            platform.GetComponent<SpriteRenderer>().color = new Color(0.3f, 0.7f, 0.8f);
+            MysticObject movement = platform.AddComponent<MysticObject>();
+            movement.kind = "platform";
+            movement.move = true;
+            movement.baseX = x;
+            movement.movementDistance = platformData.movementDistance;
+            movement.movementFrequency = platformData.movementFrequency;
+            return;
+        }
+
         GameObject grass = Shape(
             "Grass_Top",
-            new Vector2(x, y + 0.24f),
+            new Vector2(x, y + platformData.size.y * 0.5f),
             new Vector2(width, 0.12f),
             new Color(0.33f, 0.78f, 0.27f)
         );
@@ -275,7 +287,7 @@ public class MysticGame : MonoBehaviour
         GameObject obj = Shape(
             "Coin",
             new Vector2(x, y),
-            new Vector2(0.36f, 0.36f),
+            data.itemValues.coinSize,
             new Color(1f, 0.82f, 0.08f),
             false,
             true
@@ -295,7 +307,7 @@ public class MysticGame : MonoBehaviour
         GameObject obj = Shape(
             "Hazard",
             new Vector2(x, y),
-            new Vector2(0.55f, 0.55f),
+            data.itemValues.hazardSize,
             new Color(0.95f, 0.2f, 0.25f),
             false,
             true
@@ -308,25 +320,17 @@ public class MysticGame : MonoBehaviour
     // ENEMIES
     // ============================
 
-    void Enemy(float x, float y)
+    void Enemy(WoodEnemy prefab, float x, float y)
     {
-        GameObject obj = Shape(
-            "Enemy",
-            new Vector2(x, y),
-            new Vector2(0.85f, 0.7f),
-            new Color(0.68f, 0.2f, 0.77f),
-            false,
-            true
-        );
+        if (prefab == null)
+        {
+            Debug.LogError("Mystic Woods: Enemy prefab is missing.");
+            return;
+        }
 
-        ApplyMysticSprite(obj, "Enemy");
-
-        MysticObject enemy =
-            obj.AddComponent<MysticObject>();
-
-        enemy.kind = "enemy";
-        enemy.move = true;
-        enemy.baseX = x;
+        WoodEnemy enemy = Instantiate(prefab, new Vector2(x, y), Quaternion.identity);
+        enemy.SetPlayer(player.transform);
+        generated.Add(enemy.gameObject);
     }
 
     // ============================
@@ -336,13 +340,19 @@ public class MysticGame : MonoBehaviour
     void LoadLevel(int n)
     {
         level = n;
-        hp = 3;
+        levelData = data.levels[n - 1];
+        SaveSystem.SelectedLevel = n;
+        SaveSystem.Data.currentLevel = n;
+        hp = data.playerStats.maxHP;
         coins = 0;
-        bossHP = 8;
+        score = 0;
+        timeLeft = levelData.timeLimit;
+        bossHP = levelData.bossStats == null ? 0 : levelData.bossStats.maxHP;
         ended = false;
 
         invulnerableUntil = 0f;
         bossShot = Time.time;
+        bossWarned = false;
 
         MobileMove = 0f;
         MobileJump = false;
@@ -351,7 +361,10 @@ public class MysticGame : MonoBehaviour
         foreach (GameObject obj in generated)
         {
             if (obj != null)
+            {
+                obj.SetActive(false);
                 Destroy(obj);
+            }
         }
 
         generated.Clear();
@@ -367,7 +380,7 @@ public class MysticGame : MonoBehaviour
             rb.linearVelocity = Vector2.zero;
 
         player.transform.position =
-            new Vector3(-6.8f, -2f, 0f);
+            (Vector3)levelData.playerSpawn;
 
         SpriteRenderer sprite =
             player.GetComponent<SpriteRenderer>();
@@ -378,91 +391,41 @@ public class MysticGame : MonoBehaviour
             sprite.sortingOrder = 10;
         }
 
-        required = n == 3 ? 0 : 4;
+        required = levelData.goalAmount;
 
-        // LEVEL 1
-        if (n == 1)
+        foreach (PlatformData platformData in levelData.platforms)
+            Platform(platformData);
+
+        foreach (Vector2 position in levelData.coins)
+            Coin(position.x, position.y);
+
+        foreach (Vector2 position in levelData.hazards)
+            Hazard(position.x, position.y);
+
+        foreach (EnemySpawn spawn in levelData.enemies)
+            Enemy(spawn.prefab, spawn.position.x, spawn.position.y);
+
+        if (levelData.bossStats != null)
         {
-            Platform(-4f, -1.8f, 2.1f);
-            Platform(0f, -1.05f, 2f);
-            Platform(4f, -1.6f, 2f);
-
-            Coin(-4f, -0.9f);
-            Coin(0f, -0.15f);
-            Coin(4f, -0.7f);
-            Coin(6.7f, -2.6f);
-
-            Hazard(-1.9f, -3.15f);
-            Enemy(2.3f, -2.9f);
-        }
-
-        // LEVEL 2
-        else if (n == 2)
-        {
-            Platform(-4f, -1.5f, 1.6f);
-            Platform(-0.9f, -0.6f, 1.6f);
-            Platform(2.2f, -1.35f, 1.5f);
-            Platform(5.4f, -0.65f, 1.6f);
-
-            Coin(-4f, -0.65f);
-            Coin(-0.9f, 0.25f);
-            Coin(2.2f, -0.5f);
-            Coin(5.4f, 0.2f);
-
-            Hazard(-2.2f, -3.15f);
-            Hazard(1f, -3.15f);
-            Enemy(3.5f, -2.9f);
-
-            GameObject movingPlatform = Shape(
-                "Moving_Platform",
-                new Vector2(0.5f, -2.5f),
-                new Vector2(1.8f, 0.35f),
-                new Color(0.3f, 0.7f, 0.8f),
-                true
-            );
-
-            movingPlatform.tag = "Ground";
-
-            MysticObject movement =
-                movingPlatform.AddComponent<MysticObject>();
-
-            movement.kind = "platform";
-            movement.move = true;
-            movement.baseX = 0.5f;
-        }
-
-        // LEVEL 3 - BOSS
-        else
-        {
-            Platform(-4f, -1.5f, 2f);
-            Platform(4f, -1.5f, 2f);
-
             boss = Shape(
-                "BOSS",
-                new Vector2(5f, -2.65f),
-                new Vector2(1.2f, 1.65f),
-                new Color(0.75f, 0.13f, 0.24f),
-                false,
-                true
+                "BOSS", levelData.bossPosition, levelData.bossSize,
+                new Color(0.75f, 0.13f, 0.24f), false, true
             );
 
             ApplyMysticSprite(boss, "Boss");
-
-            MysticObject bossObject =
-                boss.AddComponent<MysticObject>();
-
+            MysticObject bossObject = boss.AddComponent<MysticObject>();
             bossObject.kind = "boss";
             bossObject.move = true;
-            bossObject.baseX = 5f;
-
-            Hazard(-0.3f, -3.15f);
+            bossObject.baseX = levelData.bossPosition.x;
+            bossObject.movementDistance = levelData.bossStats.patrolDistance;
+            bossObject.movementFrequency = levelData.bossStats.patrolFrequency;
         }
 
         // EXIT
         GameObject exit = Shape(
             "EXIT",
-            new Vector2(7.6f, -2.5f),
-            new Vector2(0.6f, 1.8f),
+            levelData.exitPosition,
+            levelData.exitSize,
             new Color(0.18f, 0.9f, 0.9f, 0.7f),
             false,
             true
@@ -472,12 +435,35 @@ public class MysticGame : MonoBehaviour
 
         UpdateStatus();
 
-        message.text = n == 3
-            ? "LEVEL 3 - BOSS FIGHT!"
-            : "LEVEL " + n + " - COLLECT 4 COINS";
+        message.text = levelData.goal == LevelGoal.DefeatBoss
+            ? levelData.title + " - DEFEAT THE BOSS"
+            : levelData.title + " - COLLECT " + required + " COINS";
 
         CancelInvoke(nameof(ClearMessage));
         Invoke(nameof(ClearMessage), 3f);
+    }
+
+    public void AddScore(int amount)
+    {
+        score += amount;
+        UpdateStatus();
+    }
+
+    void OnApplicationPause(bool paused)
+    {
+        if (paused)
+        {
+            MobileMove = 0f;
+            MobileJump = false;
+            MobileFire = false;
+            SaveSystem.Save();
+        }
+    }
+
+    void OnApplicationFocus(bool focused)
+    {
+        if (!focused)
+            SaveSystem.Save();
     }
 
     void ClearMessage()
@@ -497,11 +483,12 @@ public class MysticGame : MonoBehaviour
 
         status.text =
             "LEVEL " + level +
-            "    HP: " + hp + "/3" +
+            "    HP: " + hp + "/" + data.playerStats.maxHP +
             "    COINS: " + coins + "/" + required +
-            (level == 3
-                ? "    BOSS: " + bossHP + "/8"
-                : "");
+            (levelData.bossStats != null
+                ? "    BOSS: " + bossHP + "/" + levelData.bossStats.maxHP
+                : "") +
+            "    SCORE: " + score + "    TIME: " + Mathf.CeilToInt(timeLeft);
     }
 
     // ============================
@@ -515,12 +502,14 @@ public class MysticGame : MonoBehaviour
 
         if (kind == "coin")
         {
-            coins++;
+            if (!generated.Remove(obj))
+                return;
 
-            if (MysticAudio.Instance != null)
-                MysticAudio.Instance.PlayCoin();
+            coins += data.itemValues.coinValue;
+            score += data.itemValues.coinScore;
 
-            generated.Remove(obj);
+            MysticAudio.Play(Sfx.Pickup);
+
             Destroy(obj);
 
             UpdateStatus();
@@ -531,11 +520,12 @@ public class MysticGame : MonoBehaviour
             kind == "boss" ||
             kind == "projectile")
         {
-            Damage();
+            Damage(kind == "boss" || kind == "projectile"
+                ? levelData.bossStats.attackDamage : data.itemValues.hazardDamage);
         }
         else if (kind == "exit")
         {
-            if (level == 3 && bossHP > 0)
+            if (levelData.goal == LevelGoal.DefeatBoss && bossHP > 0)
             {
                 message.text = "DEFEAT THE BOSS FIRST!";
                 return;
@@ -547,7 +537,11 @@ public class MysticGame : MonoBehaviour
                 return;
             }
 
-            if (level < 3)
+            score += levelData.completionScore;
+            SaveSystem.LevelCompleted(level, score);
+            MysticAudio.Play(Sfx.Win);
+
+            if (level < data.levels.Length)
                 LoadLevel(level + 1);
             else
                 End("YOU WIN!", false);
@@ -560,15 +554,21 @@ public class MysticGame : MonoBehaviour
 
     public void Damage()
     {
+        Damage(data.itemValues.hazardDamage);
+    }
+
+    public void Damage(int amount)
+    {
         if (ended || Time.time < invulnerableUntil)
             return;
 
-        hp--;
+        hp = Mathf.Max(0, hp - amount);
 
-        if (MysticAudio.Instance != null)
-            MysticAudio.Instance.PlayDamage();
+        // The fatal hit is voiced by the lose sound in End().
+        if (hp > 0)
+            MysticAudio.Play(Sfx.Hit);
 
-        invulnerableUntil = Time.time + 1.3f;
+        invulnerableUntil = Time.time + data.playerStats.invulnerabilityTime;
 
         UpdateStatus();
 
@@ -582,15 +582,23 @@ public class MysticGame : MonoBehaviour
 
     void Update()
     {
-        if (ended || player == null)
+        if (ended || player == null || Time.timeScale == 0f)
             return;
 
-        if (player.transform.position.y < -7f)
+        timeLeft = Mathf.Max(0f, timeLeft - Time.deltaTime);
+        UpdateStatus();
+        if (timeLeft <= 0f)
+        {
+            End("TIME UP", true);
+            return;
+        }
+
+        if (player.transform.position.y < levelData.fallHeight)
         {
             Damage();
 
             player.transform.position =
-                new Vector3(-6.8f, -2f, 0f);
+                (Vector3)levelData.playerSpawn;
 
             Rigidbody2D rb =
                 player.GetComponent<Rigidbody2D>();
@@ -616,25 +624,36 @@ public class MysticGame : MonoBehaviour
         // SHOOTING
         if (
             (Input.GetKeyDown(KeyCode.F) || MobileFire) &&
-            Time.time - lastShot > 0.35f)
+            Time.time - lastShot > data.playerStats.shotCooldown)
         {
             lastShot = Time.time;
             Shoot();
         }
 
+        // BOSS WIND-UP: the boss is heard before each projectile appears.
+        if (
+            boss != null &&
+            !bossWarned &&
+            Time.time - bossShot > levelData.bossStats.cooldownTime - BossWindUp)
+        {
+            bossWarned = true;
+            if (WoodEnemy.OnScreen(Camera.main, boss.transform.position))
+                MysticAudio.Play(Sfx.EnemyWindUp);
+        }
+
         // BOSS SHOOTING
         if (
-            level == 3 &&
             boss != null &&
-            Time.time - bossShot > 2f)
+            Time.time - bossShot > levelData.bossStats.cooldownTime)
         {
             bossShot = Time.time;
+            bossWarned = false;
 
             GameObject projectile = Shape(
                 "Boss_Projectile",
                 boss.transform.position +
-                Vector3.left * 0.6f,
-                new Vector2(0.3f, 0.3f),
+                (Vector3)levelData.bossShotOffset,
+                levelData.bossProjectileSize,
                 Color.magenta,
                 false,
                 true
@@ -644,7 +663,8 @@ public class MysticGame : MonoBehaviour
                 projectile.AddComponent<MysticObject>();
 
             movement.kind = "projectile";
-            movement.speed = -3.5f;
+            movement.speed = -levelData.bossStats.projectileSpeed;
+            movement.lifetime = levelData.bossStats.projectileLifetime;
         }
     }
 
@@ -652,10 +672,27 @@ public class MysticGame : MonoBehaviour
     // PLAYER SHOOTING
     // ============================
 
+    public void EnemyShot(Vector2 position, Vector2 direction, float speed, int damage, float lifetime)
+    {
+        GameObject shot = Shape(
+            "Shooter_Projectile", position, new Vector2(0.32f, 0.18f),
+            Color.yellow, false, true
+        );
+
+        ApplyMysticSprite(shot, "Bullet");
+        shot.transform.right = direction;
+
+        MysticObject movement = shot.AddComponent<MysticObject>();
+        movement.kind = "shooterShot";
+        movement.direction = direction;
+        movement.speed = speed;
+        movement.damage = damage;
+        movement.lifetime = lifetime;
+    }
+
     void Shoot()
     {
-        if (MysticAudio.Instance != null)
-            MysticAudio.Instance.PlayShoot();
+        MysticAudio.Play(Sfx.Shoot);
 
         SpriteRenderer sprite =
             player.GetComponent<SpriteRenderer>();
@@ -666,11 +703,11 @@ public class MysticGame : MonoBehaviour
             "Player_Bullet",
             player.transform.position +
             new Vector3(
-                right ? 0.55f : -0.55f,
-                0.1f,
+                right ? data.playerStats.shotOffset.x : -data.playerStats.shotOffset.x,
+                data.playerStats.shotOffset.y,
                 0f
             ),
-            new Vector2(0.42f, 0.25f),
+            data.playerStats.projectileSize,
             Color.yellow,
             false,
             true
@@ -699,7 +736,8 @@ public class MysticGame : MonoBehaviour
             bullet.AddComponent<MysticObject>();
 
         movement.kind = "bullet";
-        movement.speed = right ? 9f : -9f;
+        movement.speed = right ? data.playerStats.projectileSpeed : -data.playerStats.projectileSpeed;
+        movement.lifetime = data.playerStats.projectileLifetime;
     }
 
     // ============================
@@ -708,15 +746,18 @@ public class MysticGame : MonoBehaviour
 
     public void HitBoss()
     {
-        if (level != 3 || boss == null || ended)
+        if (boss == null || ended || bossHP <= 0)
             return;
 
-        bossHP--;
+        bossHP = Mathf.Max(0, bossHP - data.playerStats.attackDamage);
 
         UpdateStatus();
 
         if (bossHP <= 0)
         {
+            MysticAudio.Play(Sfx.EnemyDeath);
+            AddScore(data.itemValues.bossScore);
+            boss.SetActive(false);
             generated.Remove(boss);
             Destroy(boss);
             boss = null;
@@ -732,6 +773,14 @@ public class MysticGame : MonoBehaviour
     void End(string title, bool retry)
     {
         ended = true;
+        CancelInvoke(nameof(ClearMessage));
+
+        // Win is played when the exit is reached; every retry ending is a loss.
+        if (retry)
+            MysticAudio.Play(Sfx.Lose);
+        MobileMove = 0f;
+        MobileJump = false;
+        MobileFire = false;
 
         overlay = new GameObject(
             "EndPanel",
@@ -832,7 +881,8 @@ public class MysticGame : MonoBehaviour
         string label,
         Vector2 position,
         Vector2 size,
-        UnityEngine.Events.UnityAction action)
+        UnityEngine.Events.UnityAction action,
+        bool clickSound = true)
     {
         GameObject go = new GameObject(
             label,
@@ -855,8 +905,12 @@ public class MysticGame : MonoBehaviour
         go.GetComponent<Image>().color =
             new Color(0.08f, 0.2f, 0.22f, 0.78f);
 
-        go.GetComponent<Button>()
-            .onClick.AddListener(action);
+        Button button = go.GetComponent<Button>();
+        button.onClick.AddListener(action);
+
+        // Menu buttons click; held movement / jump / fire controls stay silent.
+        if (clickSound)
+            MysticAudio.RegisterButton(button);
 
         MakeText(
             go.transform,
@@ -921,7 +975,8 @@ public class MysticGame : MonoBehaviour
             "LEFT",
             new Vector2(-535f, -260f),
             new Vector2(125f, 85f),
-            () => { }
+            () => { },
+            false
         );
 
         GameObject right = MakeButton(
@@ -929,7 +984,8 @@ public class MysticGame : MonoBehaviour
             "RIGHT",
             new Vector2(-395f, -260f),
             new Vector2(125f, 85f),
-            () => { }
+            () => { },
+            false
         );
 
         GameObject jump = MakeButton(
@@ -937,7 +993,8 @@ public class MysticGame : MonoBehaviour
             "JUMP",
             new Vector2(410f, -260f),
             new Vector2(125f, 85f),
-            () => { }
+            () => { },
+            false
         );
 
         GameObject fire = MakeButton(
@@ -945,7 +1002,8 @@ public class MysticGame : MonoBehaviour
             "FIRE",
             new Vector2(545f, -260f),
             new Vector2(125f, 85f),
-            () => { }
+            () => { },
+            false
         );
 
         left.AddComponent<MysticHoldButton>()
@@ -972,12 +1030,55 @@ public class MysticObject : MonoBehaviour
     public bool move;
     public float baseX;
     public float speed;
+    public float lifetime;
+    public float movementDistance;
+    public float movementFrequency;
+    bool consumed;
 
+    public Vector2 direction;
+    public int damage;
     float born;
+    Camera gameCamera;
+    ContactFilter2D solids;
+    RaycastHit2D[] hits;
+
+    void FixedUpdate()
+    {
+        if (kind != "shooterShot")
+            return;
+
+        if (MysticGame.Instance == null || MysticGame.Instance.RoundEnded ||
+            Time.time - born > lifetime || !WoodEnemy.OnScreen(gameCamera, transform.position))
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        float step = speed * Time.fixedDeltaTime;
+        int count = Physics2D.Raycast(transform.position, direction, solids, hits, step);
+        if (count > 0)
+        {
+            Transform target = hits[0].transform;
+            if (target.GetComponent<PlayerMovement>() != null &&
+                WoodEnemy.OnScreen(gameCamera, target.position))
+                MysticGame.Instance.Damage(damage);
+
+            Destroy(gameObject);
+            return;
+        }
+
+        transform.position += (Vector3)(direction * step);
+    }
 
     void Start()
     {
         born = Time.time;
+        if (kind == "shooterShot")
+        {
+            gameCamera = Camera.main;
+            hits = new RaycastHit2D[1];
+            solids.useTriggers = false;
+        }
     }
 
     void Update()
@@ -987,7 +1088,7 @@ public class MysticObject : MonoBehaviour
         {
             transform.position = new Vector3(
                 baseX +
-                Mathf.Sin(Time.time * 1.4f) * 1.15f,
+                Mathf.Sin(Time.time * movementFrequency) * movementDistance,
                 transform.position.y,
                 0f
             );
@@ -999,7 +1100,7 @@ public class MysticObject : MonoBehaviour
             transform.position +=
                 Vector3.right * speed * Time.deltaTime;
 
-            if (Time.time - born > 3f)
+            if (Time.time - born > lifetime)
                 Destroy(gameObject);
         }
 
@@ -1016,11 +1117,20 @@ public class MysticObject : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (MysticGame.Instance == null)
+        if (MysticGame.Instance == null || MysticGame.Instance.RoundEnded || consumed)
             return;
 
         if (kind == "bullet")
         {
+            WoodEnemy enemy = other.GetComponent<WoodEnemy>();
+            if (enemy != null)
+            {
+                consumed = true;
+                enemy.TakeHit(GameData.Instance.playerStats.attackDamage);
+                Destroy(gameObject);
+                return;
+            }
+
             MysticObject target =
                 other.GetComponent<MysticObject>();
 
@@ -1028,11 +1138,13 @@ public class MysticObject : MonoBehaviour
             {
                 if (target.kind == "boss")
                 {
+                    consumed = true;
                     MysticGame.Instance.HitBoss();
                     Destroy(gameObject);
                 }
                 else if (target.kind == "enemy")
                 {
+                    MysticAudio.Play(Sfx.EnemyDeath);
                     Destroy(other.gameObject);
                     Destroy(gameObject);
                 }
@@ -1040,6 +1152,9 @@ public class MysticObject : MonoBehaviour
 
             return;
         }
+
+        if (kind == "shooterShot")
+            return;
 
         if (other.gameObject.name == "Player")
         {

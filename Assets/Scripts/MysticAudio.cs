@@ -1,23 +1,71 @@
-
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
+// Every sound event the game can play. Gameplay scripts call MysticAudio.Play(Sfx.X).
+public enum Sfx
+{
+    Jump,
+    Hit,
+    Pickup,
+    EnemyWindUp,
+    EnemyDeath,
+    UIClick,
+    Win,
+    Lose,
+    Shoot
+}
+
+// AudioManager: owns the AudioMixer, plays sound effects through the SFX group,
+// applies saved volumes in decibels and switches the Paused snapshot.
+// One instance is created before the first scene loads and survives scene changes.
 public class MysticAudio : MonoBehaviour
 {
-    public static MysticAudio Instance;
+    public const float MinDecibels = -80f;
+    public const string MusicParameter = "MusicVolume";
+    public const string EffectsParameter = "SFXVolume";
+    public const string MasterParameter = "MasterVolume";
 
-    private AudioSource musicSource;
-    private AudioSource effectsSource;
+    const int VoiceCount = 10;
+    const float PauseFadeTime = 0.35f;
+    const float ResumeFadeTime = 0.5f;
+    const float RepeatGuard = 0.04f;
 
-    private AudioClip jumpSound;
-    private AudioClip coinSound;
-    private AudioClip shootSound;
-    private AudioClip damageSound;
-    private AudioClip backgroundMusic;
+    public static MysticAudio Instance { get; private set; }
+
+    public AudioMixerGroup MusicGroup { get; private set; }
+
+    AudioMixer mixer;
+    AudioMixerGroup effectsGroup;
+    AudioMixerSnapshot normalSnapshot;
+    AudioMixerSnapshot pausedSnapshot;
+
+    AudioSource[] voices;
+    int nextVoice;
+
+    readonly Dictionary<Sfx, AudioClip[]> clips = new Dictionary<Sfx, AudioClip[]>();
+    readonly Dictionary<Sfx, int> lastClip = new Dictionary<Sfx, int>();
+    readonly Dictionary<Sfx, float> lastPlayed = new Dictionary<Sfx, float>();
+    readonly HashSet<Button> clickButtons = new HashSet<Button>();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void Bootstrap()
+    {
+        if (Instance != null)
+            return;
+
+        GameObject audioSystem = new GameObject("AudioSystem");
+        audioSystem.AddComponent<MysticAudio>();
+        audioSystem.AddComponent<MusicManager>();
+    }
 
     void Awake()
     {
         if (Instance != null && Instance != this)
         {
+            // An older scene copy of the AudioManager: the bootstrap instance already exists.
             Destroy(gameObject);
             return;
         }
@@ -25,152 +73,216 @@ public class MysticAudio : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        musicSource = gameObject.AddComponent<AudioSource>();
-        effectsSource = gameObject.AddComponent<AudioSource>();
-
-        musicSource.volume = 0.15f;
-        musicSource.loop = true;
-        musicSource.playOnAwake = false;
-
-        effectsSource.volume = 0.45f;
-        effectsSource.playOnAwake = false;
-
-        jumpSound = MakeTone(500f, 850f, 0.18f);
-        coinSound = MakeTone(900f, 1400f, 0.20f);
-        shootSound = MakeTone(750f, 300f, 0.12f);
-        damageSound = MakeTone(300f, 100f, 0.35f);
-
-        backgroundMusic = MakeMusic();
-
-        musicSource.clip = backgroundMusic;
-        musicSource.Play();
-    }
-
-    AudioClip MakeTone(
-        float startFreq,
-        float endFreq,
-        float duration)
-    {
-        int sampleRate = 44100;
-        int length = Mathf.RoundToInt(sampleRate * duration);
-
-        float[] samples = new float[length];
-        float phase = 0f;
-
-        for (int i = 0; i < length; i++)
+        mixer = Resources.Load<AudioMixer>("Audio/MysticMixer");
+        if (mixer == null)
         {
-            float t = (float)i / length;
-
-            float frequency = Mathf.Lerp(
-                startFreq,
-                endFreq,
-                t
-            );
-
-            phase += 2f * Mathf.PI * frequency / sampleRate;
-
-            float envelope = Mathf.Pow(1f - t, 2f);
-
-            samples[i] =
-                Mathf.Sin(phase) * envelope * 0.5f;
+            Debug.LogError("Mystic Woods: Resources/Audio/MysticMixer is missing.");
+        }
+        else
+        {
+            MusicGroup = FindGroup("MusicTracks");
+            effectsGroup = FindGroup("SFX");
+            normalSnapshot = mixer.FindSnapshot("Normal");
+            pausedSnapshot = mixer.FindSnapshot("Paused");
         }
 
-        AudioClip clip = AudioClip.Create(
-            "GeneratedSound",
-            length,
-            1,
-            sampleRate,
-            false
-        );
-
-        clip.SetData(samples, 0);
-        return clip;
-    }
-
-    AudioClip MakeMusic()
-    {
-        int sampleRate = 44100;
-        float duration = 8f;
-
-        int length = Mathf.RoundToInt(
-            sampleRate * duration
-        );
-
-        float[] samples = new float[length];
-
-        float[] notes =
+        voices = new AudioSource[VoiceCount];
+        for (int i = 0; i < VoiceCount; i++)
         {
-            261.63f,
-            329.63f,
-            392.00f,
-            329.63f,
-            293.66f,
-            349.23f,
-            440.00f,
-            392.00f
-        };
-
-        for (int i = 0; i < length; i++)
-        {
-            float time = (float)i / sampleRate;
-
-            int noteIndex =
-                Mathf.FloorToInt(time) % notes.Length;
-
-            float frequency = notes[noteIndex];
-
-            float noteTime = time % 1f;
-
-            float envelope =
-                Mathf.Min(1f, noteTime * 12f) *
-                Mathf.Min(1f, (1f - noteTime) * 5f);
-
-            float melody = Mathf.Sin(
-                2f * Mathf.PI * frequency * time
-            );
-
-            float bass = Mathf.Sin(
-                2f * Mathf.PI * (frequency / 4f) * time
-            );
-
-            samples[i] =
-                (melody * 0.14f + bass * 0.10f) *
-                envelope;
+            AudioSource source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.loop = false;
+            source.spatialBlend = 0f;
+            source.outputAudioMixerGroup = effectsGroup;
+            voices[i] = source;
         }
 
-        AudioClip clip = AudioClip.Create(
-            "MysticWoodsMusic",
-            length,
-            1,
-            sampleRate,
-            false
-        );
+        LoadClips(Sfx.Jump, "jump_1", "jump_2");
+        LoadClips(Sfx.Hit, "hit_1", "hit_2");
+        LoadClips(Sfx.Pickup, "pickup_1", "pickup_2");
+        LoadClips(Sfx.EnemyWindUp, "enemy_windup_1", "enemy_windup_2");
+        LoadClips(Sfx.EnemyDeath, "enemy_death_1", "enemy_death_2");
+        LoadClips(Sfx.UIClick, "ui_click");
+        LoadClips(Sfx.Win, "win");
+        LoadClips(Sfx.Lose, "lose");
+        LoadClips(Sfx.Shoot, "shoot_1", "shoot_2");
 
-        clip.SetData(samples, 0);
-        return clip;
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    public void PlayJump()
+    void Start()
     {
-        if (effectsSource != null)
-            effectsSource.PlayOneShot(jumpSound);
+        if (Instance != this)
+            return;
+
+        // AudioMixer.SetFloat is ignored when called in Awake, so volumes are applied here.
+        ApplySettings();
     }
 
-    public void PlayCoin()
+    void OnDestroy()
     {
-        if (effectsSource != null)
-            effectsSource.PlayOneShot(coinSound);
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Instance = null;
+        }
     }
 
-    public void PlayShoot()
+    AudioMixerGroup FindGroup(string groupName)
     {
-        if (effectsSource != null)
-            effectsSource.PlayOneShot(shootSound);
+        foreach (AudioMixerGroup group in mixer.FindMatchingGroups(string.Empty))
+        {
+            if (group.name == groupName)
+                return group;
+        }
+
+        Debug.LogError("Mystic Woods: Mixer group not found: " + groupName);
+        return null;
     }
 
-    public void PlayDamage()
+    void LoadClips(Sfx sound, params string[] names)
     {
-        if (effectsSource != null)
-            effectsSource.PlayOneShot(damageSound);
+        List<AudioClip> loaded = new List<AudioClip>();
+        foreach (string clipName in names)
+        {
+            AudioClip clip = Resources.Load<AudioClip>("Audio/" + clipName);
+            if (clip != null)
+                loaded.Add(clip);
+            else
+                Debug.LogWarning("Mystic Woods: Sound not found: Audio/" + clipName);
+        }
+
+        clips[sound] = loaded.ToArray();
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Leaving the pause menu by Restart or Main Menu reloads a scene:
+        // always return to the normal mix.
+        SetPaused(false);
+
+        clickButtons.RemoveWhere(button => button == null);
+        foreach (Button button in FindObjectsByType<Button>(FindObjectsInactive.Include))
+            RegisterButton(button);
+    }
+
+    // ------------------------------------------------------------ playback
+
+    public static void Play(Sfx sound)
+    {
+        if (Instance != null)
+            Instance.PlaySound(sound);
+    }
+
+    void PlaySound(Sfx sound)
+    {
+        if (!clips.TryGetValue(sound, out AudioClip[] options) || options.Length == 0)
+            return;
+
+        // One game event must give one sound, even if two code paths report it in the same frame.
+        float now = Time.unscaledTime;
+        if (lastPlayed.TryGetValue(sound, out float previous) && now - previous < RepeatGuard)
+            return;
+
+        lastPlayed[sound] = now;
+
+        int index = 0;
+        if (options.Length > 1)
+        {
+            int last = lastClip.TryGetValue(sound, out int value) ? value : -1;
+            index = Random.Range(0, options.Length);
+            if (index == last)
+                index = (index + 1) % options.Length;
+        }
+
+        lastClip[sound] = index;
+
+        AudioSource voice = FreeVoice();
+        voice.clip = options[index];
+        voice.pitch = Varies(sound) ? Random.Range(0.92f, 1.08f) : 1f;
+        voice.volume = Level(sound);
+        voice.Play();
+    }
+
+    AudioSource FreeVoice()
+    {
+        for (int i = 0; i < voices.Length; i++)
+        {
+            AudioSource candidate = voices[(nextVoice + i) % voices.Length];
+            if (!candidate.isPlaying)
+            {
+                nextVoice = (nextVoice + i + 1) % voices.Length;
+                return candidate;
+            }
+        }
+
+        // All voices busy: reuse the oldest one.
+        AudioSource oldest = voices[nextVoice];
+        nextVoice = (nextVoice + 1) % voices.Length;
+        return oldest;
+    }
+
+    static bool Varies(Sfx sound)
+    {
+        // Jingles keep their tuning; everything that repeats during play gets pitch variation.
+        return sound != Sfx.Win && sound != Sfx.Lose;
+    }
+
+    static float Level(Sfx sound)
+    {
+        switch (sound)
+        {
+            case Sfx.EnemyWindUp: return 1f;
+            case Sfx.Hit: return 0.95f;
+            case Sfx.Win:
+            case Sfx.Lose: return 0.9f;
+            case Sfx.EnemyDeath: return 0.85f;
+            case Sfx.Pickup: return 0.75f;
+            case Sfx.Jump: return 0.6f;
+            case Sfx.UIClick: return 0.6f;
+            case Sfx.Shoot: return 0.5f;
+            default: return 1f;
+        }
+    }
+
+    // ----------------------------------------------------------- UI clicks
+
+    public static void RegisterButton(Button button)
+    {
+        if (Instance == null || button == null || button.GetComponent<MysticHoldButton>() != null)
+            return;
+
+        if (Instance.clickButtons.Add(button))
+            button.onClick.AddListener(() => Play(Sfx.UIClick));
+    }
+
+    // ------------------------------------------------------ volume and mix
+
+    public static float ToDecibels(float linear)
+    {
+        if (linear <= 0.0001f)
+            return MinDecibels;
+
+        return Mathf.Max(MinDecibels, Mathf.Log10(linear) * 20f);
+    }
+
+    public void ApplySettings()
+    {
+        if (mixer == null)
+            return;
+
+        mixer.SetFloat(MasterParameter, 0f);
+        mixer.SetFloat(MusicParameter, ToDecibels(SaveSystem.Data.musicVolume));
+        mixer.SetFloat(EffectsParameter, ToDecibels(SaveSystem.Data.effectsVolume));
+    }
+
+    public static void SetPaused(bool paused)
+    {
+        if (Instance == null)
+            return;
+
+        AudioMixerSnapshot target = paused ? Instance.pausedSnapshot : Instance.normalSnapshot;
+        if (target != null)
+            target.TransitionTo(paused ? PauseFadeTime : ResumeFadeTime);
     }
 }

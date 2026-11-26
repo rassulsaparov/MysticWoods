@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2b4d37c5046499c81bf53471f0d861c, type: 3}
+  m_Name: GameData
+  m_EditorClassIdentifier: Assembly-CSharp::GameData
+  playerStats: {fileID: 11400000, guid: 8fea8ac6923a439b8512cbe1ab529cda, type: 2}
+  itemValues: {fileID: 11400000, guid: c820239ce2334a48b19f3c2a9cdf47d6, type: 2}
+  levels:
+  - {fileID: 11400000, guid: 5bcbc0d628d046ca834763629f374dc8, type: 2}
+  - {fileID: 11400000, guid: 51ce27f50f074185b49e21ca29317dfa, type: 2}
+  - {fileID: 11400000, guid: 28881a3f06484c29b7ee62b3e4e45947, type: 2}
+  defaultMusicVolume: 0.6
+  defaultEffectsVolume: 0.8

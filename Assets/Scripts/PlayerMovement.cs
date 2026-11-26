@@ -3,8 +3,9 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float moveSpeed = 5f;
-    public float jumpForce = 8f;
+    public float moveSpeed => stats.moveSpeed;
+    public float jumpForce => stats.jumpForce;
+    [SerializeField] PlayerStats stats;
 
     private Rigidbody2D rb;
     private Animator animator;
@@ -22,6 +23,9 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        if (Time.timeScale == 0f)
+            return;
+
         // Keyboard and mobile movement
         float move = Input.GetAxisRaw("Horizontal");
 
@@ -65,10 +69,7 @@ public class PlayerMovement : MonoBehaviour
             );
 
             // Jump sound
-            if (MysticAudio.Instance != null)
-            {
-                MysticAudio.Instance.PlayJump();
-            }
+            MysticAudio.Play(Sfx.Jump);
         }
 
         previousMobileJump = MysticGame.MobileJump;
